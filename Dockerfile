@@ -134,11 +134,13 @@ RUN pip install --no-cache-dir --no-deps /tmp/odysseus-wheels/*.whl \
 # keeps the effective Docker selection consistent with system trust.
 RUN python /usr/local/bin/check-ca-trust.py --system --python --grpc
 
-# Copy app code
-COPY . .
+# Copy app code with the default runtime ownership. The entrypoint still
+# repairs ownership when PUID/PGID are overridden, but the common 1000:1000
+# path no longer has to chown the entire image tree on every container start.
+COPY --chown=1000:1000 . .
 # Require the redistribution notices in the image build context.
-COPY licenses/ ./licenses/
-COPY THIRD_PARTY_PROVENANCE.json ACKNOWLEDGMENTS.md ./
+COPY --chown=1000:1000 licenses/ ./licenses/
+COPY --chown=1000:1000 THIRD_PARTY_PROVENANCE.json ACKNOWLEDGMENTS.md ./
 
 # Create data directory (mount a volume here for persistence)
 RUN mkdir -p data logs services/cache/search

@@ -55,14 +55,26 @@ old_exec = "exec(compile(f.read(), version_file, 'exec'))"
 new_exec = "_ver_ns = {}\n        exec(compile(f.read(), version_file, 'exec'), _ver_ns)"
 old_ret = "return locals()['__version__']"
 new_ret = "return _ver_ns['__version__']"
+old_setup_requires = "setup_requires=['cython', 'numpy', 'torch'],"
 patched = 0
+setup_requires_patched = 0
 for setup in pathlib.Path(".").glob("*/setup.py"):
     s = setup.read_text()
     if old_exec in s and old_ret in s:
-        setup.write_text(s.replace(old_exec, new_exec).replace(old_ret, new_ret))
+        s = s.replace(old_exec, new_exec).replace(old_ret, new_ret)
+        # BasicSR only needs these packages when BASICSR_EXT=True. This image
+        # builds the pure-Python wheel, so avoid downloading Torch into the
+        # throwaway build environment just to generate wheel metadata.
+        if old_setup_requires in s:
+            s = s.replace(old_setup_requires, "setup_requires=[],")
+            setup_requires_patched += 1
+        setup.write_text(s)
         print("   patched", setup)
         patched += 1
 assert patched == 3, f"expected to patch 3 setup.py files, patched {patched}"
+assert setup_requires_patched == 1, (
+    f"expected to patch BasicSR setup_requires once, patched {setup_requires_patched}"
+)
 PY
 
 echo ">> building wheels into ${OUT}"

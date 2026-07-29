@@ -237,6 +237,18 @@ def test_docker_entrypoint_cache_parent_with_nested_volume():
     assert "CACHE_TEST 23456 23456 23456 0" in result.stdout
 
 
+def test_docker_image_uses_default_runtime_ownership_for_app_tree():
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "COPY --chown=1000:1000 . ." in dockerfile
+
+
+def test_realesrgan_wheel_build_does_not_bootstrap_torch():
+    script = (ROOT / "docker" / "build-realesrgan-wheels.sh").read_text(encoding="utf-8")
+    assert "old_setup_requires = \"setup_requires=['cython', 'numpy', 'torch'],\"" in script
+    assert 's.replace(old_setup_requires, "setup_requires=[],")' in script
+    assert "assert setup_requires_patched == 1" in script
+
+
 def test_dockerignore_excludes_secrets_editor_backups():
     patterns = set((ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines())
     assert {
