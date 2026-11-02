@@ -561,6 +561,8 @@ async def do_manage_settings(content: str, owner: Optional[str] = None) -> Dict:
             "teacher model": "teacher_model", "teacher": "teacher_enabled",
             "utility model": "utility_model", "research model": "research_model",
             "research max tokens": "research_max_tokens",
+            "research thinking": "research_thinking_mode",
+            "research reasoning effort": "research_reasoning_effort",
             "vision model": "vision_model", "vision": "vision_enabled",
             "image model": "image_model", "image quality": "image_quality",
             "image gen": "image_gen_enabled", "image generation": "image_gen_enabled",

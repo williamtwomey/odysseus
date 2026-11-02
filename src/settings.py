@@ -112,6 +112,15 @@ DEFAULT_SETTINGS = {
     # unbounded model/API bill. Other values are bounded to [60, 86400].
     # Tune via Settings or by editing data/settings.json.
     "research_run_timeout_seconds": 1800,
+    # Reasoning controls for research LLM calls only ("" = model default).
+    # research_thinking_mode: "on" | "off" (local Qwen-style chat templates
+    # and hosted providers that expose a thinking switch).
+    # research_reasoning_effort: none/minimal/low/medium/high/xhigh, sent as
+    # reasoning_effort. Thinking models that loop in their reasoning at the
+    # research temperature can otherwise burn the whole token budget without
+    # writing a report.
+    "research_thinking_mode": "",
+    "research_reasoning_effort": "",
     "agent_max_tool_calls": 0,
     "agent_max_rounds": 20,  # per-message agent step cap (clamped 1..200)
     # Soft input-token budget for the agent loop. The DEFAULT value (6000) is the

@@ -24,6 +24,39 @@ def strip_thinking(text):
 
 
 # ---------------------------------------------------------------------------
+# Reasoning controls for research LLM calls
+# ---------------------------------------------------------------------------
+
+_RESEARCH_THINKING_MODES = {"on", "off"}
+_RESEARCH_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh"}
+
+
+def resolve_research_reasoning(get_setting_fn):
+    """Read research_thinking_mode / research_reasoning_effort from settings.
+
+    Returns ``(thinking_mode, reasoning_effort)``, each ``None`` when unset
+    or unrecognised, which leaves the model/server default alone. Research
+    calls run at low temperature with large token budgets, and some thinking
+    models (Qwen3.x at a server-side xhigh effort, for one) loop inside their
+    reasoning until the budget runs out and never write the answer. These let
+    an operator turn thinking off or down for research without changing what
+    the same model does in chat.
+    """
+    try:
+        mode = str(get_setting_fn("research_thinking_mode", "") or "").strip().lower()
+    except Exception:
+        mode = ""
+    try:
+        effort = str(get_setting_fn("research_reasoning_effort", "") or "").strip().lower()
+    except Exception:
+        effort = ""
+    return (
+        mode if mode in _RESEARCH_THINKING_MODES else None,
+        effort if effort in _RESEARCH_REASONING_EFFORTS else None,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Source quality filtering
 # ---------------------------------------------------------------------------
 

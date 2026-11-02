@@ -15,10 +15,19 @@ import time
 from pathlib import Path
 from typing import Optional, Dict
 
-from src.research_utils import strip_thinking, is_low_quality
+from src.research_utils import strip_thinking, is_low_quality, resolve_research_reasoning
 from src.constants import DEEP_RESEARCH_DIR
 
 logger = logging.getLogger(__name__)
+
+
+def _research_reasoning_kwargs() -> dict:
+    """thinking_mode / reasoning_effort for research LLM calls, from settings."""
+    from src.settings import get_setting
+
+    thinking_mode, reasoning_effort = resolve_research_reasoning(get_setting)
+    return {"thinking_mode": thinking_mode, "reasoning_effort": reasoning_effort}
+
 
 RESEARCH_DATA_DIR = Path(DEEP_RESEARCH_DIR)
 _RESEARCH_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9-]{1,128}$")
@@ -177,6 +186,7 @@ class ResearchHandler:
                 headers=llm_headers,
                 timeout=15,
                 max_retries=1,
+                **_research_reasoning_kwargs(),
             )
             query = strip_thinking(response).strip().strip('"\'')
             if query and len(query) > 5:
@@ -204,6 +214,7 @@ class ResearchHandler:
                 headers=llm_headers,
                 timeout=30,
                 max_retries=1,
+                **_research_reasoning_kwargs(),
             )
             response = strip_thinking(response)
 
@@ -1080,6 +1091,7 @@ class ResearchHandler:
                 search_provider=search_provider,
                 category=category,
                 session_id=session_id,
+                **_research_reasoning_kwargs(),
             )
             if _task_entry is not None:
                 _task_entry["researcher"] = researcher

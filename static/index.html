@@ -1878,6 +1878,29 @@
                 </div>
               </div>
               <div class="settings-row">
+                <label class="settings-label">Thinking</label>
+                <div style="position:relative;width:382.5px;flex:0 0 auto;margin-left:auto;">
+                  <select id="set-researchThinking" class="settings-select" style="width:100%;padding-right:48px;">
+                    <option value="">Model default</option>
+                    <option value="off">Off</option>
+                    <option value="on">On</option>
+                  </select>
+                  <span title="Thinking mode for research LLM calls only; chat is unaffected. Some thinking models loop inside their reasoning at research settings and run out of tokens before writing the report. Turn thinking off (or lower the effort) if reports come back as raw reasoning or empty." style="position:absolute;right:28px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;opacity:0.55;cursor:help;user-select:none;pointer-events:auto;">?</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <label class="settings-label">Reasoning Effort</label>
+                <select id="set-researchReasoningEffort" class="settings-select" style="width:382.5px;flex:0 0 auto;margin-left:auto;">
+                  <option value="">Model default</option>
+                  <option value="none">None</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="xhigh">Extra high</option>
+                </select>
+              </div>
+              <div class="settings-row">
                 <label class="settings-label">Timeout</label>
                 <input id="set-researchRunTimeout" type="text" inputmode="numeric" placeholder="1800 sec (0 = no limit)" class="settings-select" style="width:382.5px;flex:0 0 auto;margin-left:auto;">
               </div>

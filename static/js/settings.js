@@ -1135,6 +1135,8 @@ async function initResearchSettings() {
   var extractTimeoutInput = el('set-researchExtractTimeout');
   var extractConcurrencyInput = el('set-researchExtractConcurrency');
   var runTimeoutInput = el('set-researchRunTimeout');
+  var thinkingSel = el('set-researchThinking');
+  var effortSel = el('set-researchReasoningEffort');
   var msg = el('set-researchMsg');
   var endpoints = [];
 
@@ -1160,6 +1162,8 @@ async function initResearchSettings() {
     if (settings.research_run_timeout_seconds !== undefined && settings.research_run_timeout_seconds !== null) {
       runTimeoutInput.value = settings.research_run_timeout_seconds;
     }
+    if (thinkingSel) thinkingSel.value = settings.research_thinking_mode || '';
+    if (effortSel) effortSel.value = settings.research_reasoning_effort || '';
   } catch (e) { console.warn('Failed to load research settings', e); }
 
   function showStatus() {
@@ -1184,6 +1188,12 @@ async function initResearchSettings() {
         parts.push(rtv === 0 ? 'Max time: no limit' : 'Max time: ' + rtv + 's');
       }
     }
+    if (thinkingSel && thinkingSel.value) {
+      parts.push('Thinking: ' + thinkingSel.value);
+    }
+    if (effortSel && effortSel.value) {
+      parts.push('Effort: ' + effortSel.value);
+    }
     if (parts.length) {
       msg.textContent = parts.join(' · ');
       msg.style.color = 'var(--fg)';
@@ -1199,6 +1209,8 @@ async function initResearchSettings() {
       research_endpoint_id: epSel.value,
       research_model: modelSel.value,
     };
+    if (thinkingSel) payload.research_thinking_mode = thinkingSel.value;
+    if (effortSel) payload.research_reasoning_effort = effortSel.value;
     var tv = parseInt(tokensInput.value, 10);
     if (tv && tv >= 1024) payload.research_max_tokens = tv;
     var et = parseInt(extractTimeoutInput.value, 10);
@@ -1228,6 +1240,8 @@ async function initResearchSettings() {
   extractTimeoutInput.addEventListener('change', saveResearch);
   extractConcurrencyInput.addEventListener('change', saveResearch);
   runTimeoutInput.addEventListener('change', saveResearch);
+  if (thinkingSel) thinkingSel.addEventListener('change', saveResearch);
+  if (effortSel) effortSel.addEventListener('change', saveResearch);
 
   _registerAiEndpointRefresh(function(nextEndpoints) {
     endpoints = nextEndpoints;

@@ -2269,6 +2269,41 @@ def normalize_model_id(
     return None
 
 
+def _openai_choice_text(choice: Dict, model: str = "") -> str:
+    """Extract the answer text from an OpenAI-compatible non-streaming choice.
+
+    Servers with a reasoning parser (vLLM, llama.cpp, radiance, DeepSeek) put
+    the model's thinking in ``reasoning_content`` and the answer in
+    ``content``. When ``content`` is empty we fall back to the reasoning, for
+    models that only ever emit that field. The exception is a choice that
+    stopped on ``length``: the model ran out of tokens mid-thought, and
+    returning that monologue as the answer is what turned truncated runs into
+    "reports" made of raw reasoning. Return an empty answer instead so callers'
+    empty/short-output handling kicks in.
+    """
+    msg = choice["message"]
+    content = msg.get("content")
+    if isinstance(content, list):
+        # Mistral structured content — extract thinking + text
+        # (same contract as stream_llm; see #5435).
+        text_part, thinking_part = _normalize_mistral_content(content)
+        if thinking_part:
+            return thinking_part + "\n\n" + (text_part or "")
+        content = text_part
+    if content:
+        return content
+    reasoning = msg.get("reasoning_content") or ""
+    if reasoning and choice.get("finish_reason") == "length":
+        logger.warning(
+            "LLM %s hit the token limit while still reasoning (%d chars of "
+            "reasoning, no answer); returning an empty response",
+            model or "?",
+            len(reasoning),
+        )
+        return ""
+    return reasoning
+
+
 def _apply_explicit_nonstream_reasoning_effort(
     payload: Dict, reasoning_effort: Optional[str]
 ) -> None:
@@ -2373,17 +2408,7 @@ def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LL
         elif provider == "ollama":
             response = _parse_ollama_response(data)
         else:
-            msg = data["choices"][0]["message"]
-            content = msg.get("content")
-            if isinstance(content, list):
-                # Mistral structured content — extract thinking + text
-                text_part, thinking_part = _normalize_mistral_content(content)
-                if thinking_part:
-                    response = thinking_part + "\n\n" + (text_part or "")
-                else:
-                    response = text_part or msg.get("reasoning_content") or ""
-            else:
-                response = content or msg.get("reasoning_content") or ""
+            response = _openai_choice_text(data["choices"][0], model)
         _set_cached_response(cache_key, response)
         return response
     except Exception:
@@ -2821,18 +2846,7 @@ async def llm_call_async(
                 elif provider == "ollama":
                     response = _parse_ollama_response(data)
                 else:
-                    msg = data["choices"][0]["message"]
-                    content = msg.get("content")
-                    if isinstance(content, list):
-                        # Mistral structured content — extract thinking + text
-                        # (same contract as llm_call / stream_llm; see #5435).
-                        text_part, thinking_part = _normalize_mistral_content(content)
-                        if thinking_part:
-                            response = thinking_part + "\n\n" + (text_part or "")
-                        else:
-                            response = text_part or msg.get("reasoning_content") or ""
-                    else:
-                        response = content or msg.get("reasoning_content") or ""
+                    response = _openai_choice_text(data["choices"][0], model)
                 _set_cached_response(
                     cache_key,
                     response,

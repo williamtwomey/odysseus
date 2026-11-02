@@ -2220,6 +2220,9 @@ class TaskScheduler:
         max_tokens, extraction_timeout, extraction_concurrency = (
             _resolve_research_settings(get_setting)
         )
+        from src.research_utils import resolve_research_reasoning
+
+        thinking_mode, reasoning_effort = resolve_research_reasoning(get_setting)
 
         researcher = DeepResearcher(
             llm_endpoint=endpoint_url,
@@ -2230,6 +2233,8 @@ class TaskScheduler:
             max_report_tokens=max_tokens,
             extraction_timeout=extraction_timeout,
             extraction_concurrency=extraction_concurrency,
+            thinking_mode=thinking_mode,
+            reasoning_effort=reasoning_effort,
         )
 
         started_ts = time.time()

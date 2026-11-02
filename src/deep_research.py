@@ -363,8 +363,12 @@ class DeepResearcher:
         search_provider: Optional[str] = None,
         category: Optional[str] = None,
         session_id: str = "",
+        thinking_mode: Optional[str] = None,
+        reasoning_effort: Optional[str] = None,
     ):
         self.llm_endpoint = llm_endpoint
+        self.thinking_mode = thinking_mode
+        self.reasoning_effort = reasoning_effort
         self.llm_model = llm_model
         self.simple_research_mode = self._looks_like_small_local_model(llm_model)
         self.llm_headers = llm_headers
@@ -636,6 +640,8 @@ class DeepResearcher:
             max_tokens=max_tokens,
             headers=self.llm_headers,
             timeout=timeout,
+            thinking_mode=self.thinking_mode,
+            reasoning_effort=self.reasoning_effort,
         )
         return strip_thinking(response)
 
