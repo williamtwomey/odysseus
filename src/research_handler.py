@@ -29,6 +29,11 @@ def _research_reasoning_kwargs() -> dict:
     return {"thinking_mode": thinking_mode, "reasoning_effort": reasoning_effort}
 
 
+def _research_llm_kwargs() -> dict:
+    """Reasoning kwargs for the handler's direct llm_call_async calls."""
+    return {**_research_reasoning_kwargs(), "thinking_mode_on_proxy": True}
+
+
 RESEARCH_DATA_DIR = Path(DEEP_RESEARCH_DIR)
 _RESEARCH_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9-]{1,128}$")
 _SEARCH_CONTINUATIONS = {
@@ -186,7 +191,7 @@ class ResearchHandler:
                 headers=llm_headers,
                 timeout=15,
                 max_retries=1,
-                **_research_reasoning_kwargs(),
+                **_research_llm_kwargs(),
             )
             query = strip_thinking(response).strip().strip('"\'')
             if query and len(query) > 5:
@@ -214,7 +219,7 @@ class ResearchHandler:
                 headers=llm_headers,
                 timeout=30,
                 max_retries=1,
-                **_research_reasoning_kwargs(),
+                **_research_llm_kwargs(),
             )
             response = strip_thinking(response)
 

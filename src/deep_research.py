@@ -642,6 +642,9 @@ class DeepResearcher:
             timeout=timeout,
             thinking_mode=self.thinking_mode,
             reasoning_effort=self.reasoning_effort,
+            # research_thinking_mode is an explicit operator choice, so honour
+            # it through llama-swap/LiteLLM-style proxies too.
+            thinking_mode_on_proxy=True,
         )
         return strip_thinking(response)
 

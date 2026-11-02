@@ -1206,19 +1206,31 @@ def _apply_local_qwen_thinking_mode(
     url: str,
     model: str,
     thinking_mode: Optional[str],
+    include_proxy: bool = False,
 ) -> None:
     """Control Qwen chat-template reasoning for local OpenAI-compatible servers.
 
     vLLM accepts this as ``chat_template_kwargs.enable_thinking``.  Keep it
     scoped to local Qwen/Odysseus models so hosted providers do not receive an
     unknown parameter, and so teacher/eval callers can opt in per request.
+
+    ``include_proxy`` also sends it to endpoints configured as ``proxy``
+    (llama-swap, LiteLLM and similar fronts for self-hosted servers, which
+    pass the kwarg through). It is opt-in rather than the default because
+    chat sessions default to ``thinking_mode="off"``; widening the default
+    would silently turn thinking off for every proxied chat.
     """
 
     mode = _normalize_thinking_mode(thinking_mode)
     if not mode:
         return
     if not is_local_endpoint(url):
-        return
+        if not include_proxy:
+            return
+        from src.model_context import _configured_endpoint_kind
+
+        if _configured_endpoint_kind(url) != "proxy":
+            return
     if not (_supports_thinking(model) or _is_odysseus_qwen_tool_router_model(model)):
         return
     kwargs = payload.setdefault("chat_template_kwargs", {})
@@ -2641,6 +2653,7 @@ async def llm_call_async(
     return_model_metadata: bool = False,
     thinking_mode: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
+    thinking_mode_on_proxy: bool = False,
 ) -> str | tuple[str, str]:
     """Asynchronous LLM call using httpx with connection pooling, timeout, retry logic, and performance logging."""
     provider = _detect_provider(url)
@@ -2792,7 +2805,10 @@ async def llm_call_async(
             payload["reasoning_effort"] = _MISTRAL_REASONING_EFFORT
         _apply_local_cache_affinity(payload, url, session_id)
         _apply_local_generation_stability(payload, target_url, model)
-        _apply_local_qwen_thinking_mode(payload, target_url, model, thinking_mode)
+        _apply_local_qwen_thinking_mode(
+            payload, target_url, model, thinking_mode,
+            include_proxy=thinking_mode_on_proxy,
+        )
         _apply_hosted_thinking_mode(payload, provider, model, thinking_mode)
         _apply_deepseek_v4_reasoning_defaults(
             payload, target_url, model, thinking_mode

@@ -115,3 +115,54 @@ def test_deep_researcher_leaves_defaults_alone(monkeypatch):
     payload = seen[-1]
     assert "enable_thinking" not in (payload.get("chat_template_kwargs") or {})
     assert "reasoning_effort" not in payload
+
+
+def _proxy_endpoint(monkeypatch):
+    """A llama-swap-style endpoint the operator configured as kind=proxy."""
+    from src import model_context
+
+    url = "http://llama-swap.lan:8080/v1/chat/completions"
+    monkeypatch.setattr(
+        model_context,
+        "_configured_endpoint_kind",
+        lambda u: "proxy" if "llama-swap.lan" in str(u) else None,
+    )
+    return url
+
+
+def test_research_thinking_mode_reaches_proxy_endpoints(monkeypatch):
+    from src.deep_research import DeepResearcher
+
+    url = _proxy_endpoint(monkeypatch)
+    seen = []
+    _patch_async(monkeypatch, _choice("a report", None, "stop"), seen)
+    researcher = DeepResearcher(
+        llm_endpoint=url, llm_model="qwen38-flash-openclaw", thinking_mode="off",
+    )
+    asyncio.run(researcher._llm([{"role": "user", "content": "proxy research"}]))
+    assert seen[-1]["chat_template_kwargs"]["enable_thinking"] is False
+
+
+def test_plain_calls_to_proxy_keep_existing_behaviour(monkeypatch):
+    # Chat sessions default to thinking_mode="off"; sending the kwarg to every
+    # proxy would silently disable thinking in proxied chats.
+    url = _proxy_endpoint(monkeypatch)
+    seen = []
+    _patch_async(monkeypatch, _choice("ok", None, "stop"), seen)
+    asyncio.run(llm_core.llm_call_async(
+        url, "qwen38-flash-openclaw",
+        [{"role": "user", "content": "plain proxied call"}], thinking_mode="off",
+    ))
+    assert "chat_template_kwargs" not in seen[-1]
+
+
+def test_include_proxy_does_not_reach_hosted_apis(monkeypatch):
+    from src import model_context
+
+    monkeypatch.setattr(model_context, "_configured_endpoint_kind", lambda u: "api")
+    payload = {}
+    llm_core._apply_local_qwen_thinking_mode(
+        payload, "https://api.example.com/v1/chat/completions",
+        "qwen3-235b", "off", include_proxy=True,
+    )
+    assert payload == {}
